@@ -3,6 +3,28 @@ export enum tipoAeronave {
   Militar = "Militar",
 }
 
+export type FuncionarioCadastroPayload = Omit<Funcionario, "id"> & {
+    endereco: Omit<Endereco, "id" | "funcionarioId">;
+    telefone: Omit<Telefone, "id" | "funcionarioId">;
+};
+
+export type Endereco = {
+  id?: number;
+  rua: string;
+  numero: number;
+  bairro: string;
+  cidade: string;
+  funcionarioId?: number;
+};
+
+export type Telefone = {
+  id?: number;
+  ddd: string;
+  numero: string;
+  funcionarioId?: number;
+};
+
+
 export enum tipoPeca {
   Nacional = "Nacional",
   Internacional = "Importada",
@@ -81,4 +103,6 @@ export interface Funcionario {
   login: string;
   senha?: string;
 }
+
+
 

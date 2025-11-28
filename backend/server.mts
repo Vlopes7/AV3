@@ -188,12 +188,142 @@ app.put("/pecaEdit", async (req, res) => {
   }
 });
 
-
 app.get("/pecasList", async (req, res) => {
-    const peças = await prisma.peca.findMany()
-    return res.json(peças)
-})
+  const peças = await prisma.peca.findMany();
+  return res.json(peças);
+});
 
+app.post("/funcionario", async (req, res) => {
+  try {
+    const { nome, cpf, cargo, login, senha, endereco, telefone } = req.body;
+
+    // ESTA É A VALIDAÇÃO QUE GERA SEU ERRO
+    if (!nome || !cpf || !cargo || !login || !senha || !endereco || !telefone) {
+      return res
+        .status(400)
+        .json({
+          error:
+            "Todos os campos (incluindo Endereço e Telefone) são obrigatórios.",
+        });
+    }
+
+    const [novoEndereco, novoTelefone, novoFuncionario] =
+      await prisma.$transaction([
+        prisma.endereco.create({
+          data: {
+            rua: endereco.rua,
+            numero: endereco.numero,
+            bairro: endereco.bairro,
+            cidade: endereco.cidade,
+          },
+        }),
+
+        prisma.telefone.create({
+          data: {
+            ddd: telefone.ddd,
+            numero: telefone.numero,
+          },
+        }),
+
+        prisma.funcionario.create({
+          data: { nome, cpf, cargo, login, senha },
+        }),
+      ]);
+
+    const funcionarioCompleto = await prisma.funcionario.update({
+      where: { id: novoFuncionario.id },
+      data: {
+        endereco: { connect: { id: novoEndereco.id } },
+        telefone: { connect: { id: novoTelefone.id } },
+      },
+      include: {
+        endereco: true,
+        telefone: true,
+      },
+    });
+
+    return res.status(201).json(funcionarioCompleto);
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ error: "Erro ao criar funcionário", detalhe: error });
+  }
+});
+
+app.put("/funcionarioEdit", async (req, res) => {
+  try {
+    const { id, nome, cpf, cargo, login, senha } = req.body;
+
+    const funcionarioAtualizado = await prisma.funcionario.update({
+      where: { id: Number(id) },
+      data: {
+        nome,
+        cpf,
+        cargo,
+        login,
+        senha,
+      },
+    });
+
+    return res.status(200).json(funcionarioAtualizado);
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ error: "Erro ao atualizar funcionário", detalhe: error });
+  }
+});
+
+app.get("/funcionario/:id", async (req, res) => {
+  try {
+    const funcionario = await prisma.funcionario.findUnique({
+      where: { id: Number(req.params.id) },
+      include: {
+        endereco: true,
+        telefone: true,
+      },
+    });
+
+    if (!funcionario) {
+      return res.status(404).json({ error: "Funcionário não encontrado" });
+    }
+
+    return res.json(funcionario);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Erro ao buscar funcionário" });
+  }
+});
+
+app.delete("/funcionario/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const [enderecoResult, telefoneResult, funcionarioResult] =
+      await prisma.$transaction([
+        prisma.endereco.deleteMany({
+          where: { funcionarioId: id },
+        }),
+
+        prisma.telefone.deleteMany({
+          where: { funcionarioId: id },
+        }),
+
+        prisma.funcionario.delete({
+          where: { id },
+        }),
+      ]);
+
+    return res.status(200).json({
+      message: "Funcionário e dados relacionados excluídos com sucesso.",
+      funcionario: funcionarioResult,
+      enderecosDeletados: enderecoResult.count,
+      telefonesDeletados: telefoneResult.count,
+    });
+  } catch (error) {
+    return res.status(404).json({ error: "Funcionário não encontrado." });
+  }
+});
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });

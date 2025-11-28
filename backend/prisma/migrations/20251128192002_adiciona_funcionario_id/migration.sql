@@ -5,7 +5,9 @@ CREATE TABLE `Endereco` (
     `numero` INTEGER NOT NULL,
     `bairro` VARCHAR(50) NOT NULL,
     `cidade` VARCHAR(50) NOT NULL,
+    `funcionarioId` INTEGER NULL,
 
+    UNIQUE INDEX `Endereco_funcionarioId_key`(`funcionarioId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -14,7 +16,9 @@ CREATE TABLE `Telefone` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `ddd` VARCHAR(3) NOT NULL,
     `numero` VARCHAR(10) NOT NULL,
+    `funcionarioId` INTEGER NULL,
 
+    UNIQUE INDEX `Telefone_funcionarioId_key`(`funcionarioId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -26,13 +30,9 @@ CREATE TABLE `Funcionario` (
     `cargo` ENUM('Administrador', 'Engenheiro', 'Operador') NOT NULL,
     `login` VARCHAR(100) NOT NULL,
     `senha` VARCHAR(191) NOT NULL,
-    `enderecoId` INTEGER NULL,
-    `telefoneId` INTEGER NULL,
 
     UNIQUE INDEX `Funcionario_cpf_key`(`cpf`),
     UNIQUE INDEX `Funcionario_login_key`(`login`),
-    UNIQUE INDEX `Funcionario_enderecoId_key`(`enderecoId`),
-    UNIQUE INDEX `Funcionario_telefoneId_key`(`telefoneId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -95,10 +95,10 @@ CREATE TABLE `User` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
-ALTER TABLE `Funcionario` ADD CONSTRAINT `Funcionario_enderecoId_fkey` FOREIGN KEY (`enderecoId`) REFERENCES `Endereco`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `Endereco` ADD CONSTRAINT `Endereco_funcionarioId_fkey` FOREIGN KEY (`funcionarioId`) REFERENCES `Funcionario`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `Funcionario` ADD CONSTRAINT `Funcionario_telefoneId_fkey` FOREIGN KEY (`telefoneId`) REFERENCES `Telefone`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE `Telefone` ADD CONSTRAINT `Telefone_funcionarioId_fkey` FOREIGN KEY (`funcionarioId`) REFERENCES `Funcionario`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Peca` ADD CONSTRAINT `Peca_aeronaveId_fkey` FOREIGN KEY (`aeronaveId`) REFERENCES `Aeronave`(`codigo`) ON DELETE RESTRICT ON UPDATE CASCADE;

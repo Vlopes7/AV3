@@ -38,30 +38,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // src/seed.ts
 var client_1 = require("@prisma/client");
-var bcrypt_1 = require("bcrypt");
 var prisma = new client_1.PrismaClient();
 function main() {
     return __awaiter(this, void 0, void 0, function () {
-        var email, cpf, loginFuncionario, senhaTextoPuro, hashedPassword, existingUser, newFuncionario, newUser;
+        var email, cpf, loginFuncionario, senhaTextoPuro, existingUser, newFuncionario, newUser;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    console.log('Iniciando o script de Seeding...');
+                    console.log('Iniciando o script de Seeding (SENHA PURA)...');
                     email = 'admin@aerocode.com';
-                    cpf = '11122233344' // CPF obrigatório
-                    ;
-                    loginFuncionario = 'admin.master' // Login do Funcionario obrigatório
-                    ;
+                    cpf = '11122233344';
+                    loginFuncionario = 'admin.master';
                     senhaTextoPuro = '123';
-                    return [4 /*yield*/, bcrypt_1.default.hash(senhaTextoPuro, 10)
-                        // 2. Verificar se o usuário de login já existe
-                    ];
-                case 1:
-                    hashedPassword = _a.sent();
                     return [4 /*yield*/, prisma.user.findUnique({
                             where: { email: email },
                         })];
-                case 2:
+                case 1:
                     existingUser = _a.sent();
                     if (existingUser) {
                         console.log("Usu\u00E1rio com o email ".concat(email, " j\u00E1 existe. Ignorando a cria\u00E7\u00E3o."));
@@ -71,27 +63,26 @@ function main() {
                             data: {
                                 nome: 'Administrador Principal',
                                 cpf: cpf,
-                                cargo: client_1.Hierarquia.Administrador, // <--- Usando o Enum
-                                login: loginFuncionario, // <--- Campo login
-                                senha: hashedPassword, // Usamos o hash para o campo 'senha' do Funcionario
-                                // enderecoId e telefoneId são opcionais (Int?) e não precisam ser fornecidos.
+                                cargo: client_1.Hierarquia.Administrador,
+                                login: loginFuncionario,
+                                senha: senhaTextoPuro,
                             }
                         })];
-                case 3:
+                case 2:
                     newFuncionario = _a.sent();
                     console.log("Funcionario criado: ".concat(newFuncionario.nome, " (ID: ").concat(newFuncionario.id, ")"));
                     return [4 /*yield*/, prisma.user.create({
                             data: {
                                 email: email,
-                                password: hashedPassword,
+                                password: senhaTextoPuro,
                                 funcionarioId: newFuncionario.id
                             }
                         })];
-                case 4:
+                case 3:
                     newUser = _a.sent();
-                    console.log("\u2705 Novo usu\u00E1rio criado com sucesso:");
+                    console.log("   Novo usu\u00E1rio criado com sucesso:");
                     console.log("   Email (Login): ".concat(newUser.email));
-                    console.log("   Login Funcionario: ".concat(newFuncionario.login));
+                    console.log("   SENHA: ".concat(senhaTextoPuro));
                     return [2 /*return*/];
             }
         });
