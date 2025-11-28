@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { type Aeronave } from './mockData';
+import { type Aeronave } from './types';
 
 interface OutletContextType {
   aeronaves: Aeronave[];

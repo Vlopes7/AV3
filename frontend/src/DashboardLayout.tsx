@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 import './css/Dashboard.css';
-import { mockPecas, mockEtapas, mockAeronaves, type Peca, type Etapa, type Aeronave } from './mockData';
+import { type Peca, type Etapa, type Aeronave } from './types';
+import { useAuth } from './AuthContext'; 
 
 function DashboardLayout() {
-  const [pecas, setPecas] = useState<Peca[]>(mockPecas);
-  const [etapas, setEtapas] = useState<Etapa[]>(mockEtapas);
-  const [aeronaves, setAeronaves] = useState<Aeronave[]>(mockAeronaves);
+  const { logout } = useAuth(); 
+  const [pecas, setPecas] = useState<Peca[]>([]);
+  const [etapas, setEtapas] = useState<Etapa[]>([]);
+  const [aeronaves, setAeronaves] = useState<Aeronave[]>([]);
 
   return (
     <div className="dashboard-container">
@@ -20,6 +22,7 @@ function DashboardLayout() {
             <li><NavLink to="/dashboard/testes">Controle de Testes</NavLink></li>
             <li><NavLink to="/dashboard/relatorios">Relatórios</NavLink></li>
             <li><NavLink to="/dashboard/funcionarios">Funcionários</NavLink></li>
+            <li><a href="/" onClick={(e) => { e.preventDefault(); logout(); localStorage.clear()}} title="Sair do sistema">Sair</a></li>
           </ul>
         </nav>
       </aside>

@@ -5,8 +5,8 @@ import Modal from "./Modal";
 import {
   tipoAeronave,
   type Aeronave,
-  type Peca,
-} from "./mockData";
+  type Peca
+} from "./types";
 
 const estadoInicialForm: Omit<Aeronave, 'codigo'> = {
   modelo: "",
@@ -19,7 +19,6 @@ interface OutletContextType {
   aeronaves: Aeronave[];
   setAeronaves: React.Dispatch<React.SetStateAction<Aeronave[]>>;
   pecas: Peca[];
-  // Adicione outros estados do contexto se necessário
 }
 
 export function Aircrafts() {
@@ -45,7 +44,7 @@ export function Aircrafts() {
     e.preventDefault();
     const newEntry: Aeronave = {
       ...novaAeronave,
-      codigo: Math.floor(Math.random() * 1000) + 100, // Código aleatório para mock
+      codigo: Math.floor(Math.random() * 1000) + 100, 
     };
     setAeronaves([...aeronaves, newEntry]);
     

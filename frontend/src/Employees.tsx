@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { mockFuncionarios, Hierarquia, type Funcionario } from './mockData';
+import { Hierarquia, type Funcionario } from './types';
 import Modal from './Modal';
 
 function Employees() {
-  const [funcionarios, setFuncionarios] = useState<Funcionario[]>(mockFuncionarios);
+  const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const initialEmployeeState: Omit<Funcionario, 'id'> = {
     nome: '',

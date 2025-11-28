@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { tipoPeca, statusPeca, type Peca, type Aeronave, type Etapa } from './mockData';
+import { tipoPeca, statusPeca, type Peca, type Aeronave, type Etapa } from './types';
 import Modal from './Modal';
 
 interface OutletContextType {

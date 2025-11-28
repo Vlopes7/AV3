@@ -31,6 +31,7 @@ function Login() {
 
       if (data.login) {
         authLogin(data.user, data.token);
+        localStorage.setItem('user', JSON.stringify(data.user))
         navigate('/dashboard');
       } else {
         setError(data.error || 'Credenciais inválidas.');
@@ -40,6 +41,8 @@ function Login() {
       setError('Não foi possível conectar ao servidor.');
     }
   };
+
+  
 
   return (
     <div className="login-container">
