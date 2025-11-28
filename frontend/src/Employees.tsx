@@ -1,24 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Hierarquia,
   type Funcionario,
   type Endereco,
   type Telefone,
-  // Adicionar o novo tipo FuncionarioCadastroPayload ao seu types.tsx/import
-  // Para fins de demonstração, vamos defini-lo aqui como um type temporário
-  // No seu código, você deve importá-lo: type FuncionarioCadastroPayload = ...
 } from "./types";
 import Modal from "./Modal";
 
-// Definição temporária do Payload para que o TypeScript pare de reclamar.
-// IDEALMENTE, isto viria do seu arquivo types.tsx
 type FuncionarioCadastroPayload = Omit<Funcionario, "id"> & {
     endereco: Omit<Endereco, "id" | "funcionarioId">;
     telefone: Omit<Telefone, "id" | "funcionarioId">;
 };
 
 
-// 1. A função de cadastro agora aceita o tipo de Payload correto
 async function cadastrarFuncionario(funcionario: FuncionarioCadastroPayload) {
   try {
     const response = await fetch("http://localhost:3000/funcionario", {
@@ -42,8 +36,6 @@ async function cadastrarFuncionario(funcionario: FuncionarioCadastroPayload) {
 }
 
 async function editarFuncionario(funcionario: Funcionario): Promise<boolean> {
-  // Nota: A tipagem de edição (Funcionario) parece OK se o servidor 
-  // espera o objeto completo (com id) para o PUT.
   try {
     const response = await fetch(
       `http://localhost:3000/funcionarioEdit`,
@@ -141,7 +133,6 @@ function Employees() {
     e.preventDefault();
 
     if (editingEmployee) {
-      // Para edição, incluímos Endereço/Telefone, mas o server.mts precisa do endpoint completo
       const updatedEmployee = { 
         ...editingEmployee, 
         ...newEmployee, 
@@ -159,14 +150,12 @@ function Employees() {
         setEditingEmployee(null);
       }
     } else {
-      // 3. A tipagem do objeto enviado agora é FuncionarioCadastroPayload
       const completeEmployeeData: FuncionarioCadastroPayload = {
         ...newEmployee, 
         endereco: newEndereco, 
         telefone: newTelefone,
       };
 
-      // Chama a função sem o 'as Funcionario' que causava o erro
       const created = await cadastrarFuncionario(completeEmployeeData);
 
       if (created) {
@@ -181,9 +170,25 @@ function Employees() {
     setStep(1);
   };
 
+  const carregarPeças= async () => {
+    try {
+      const response = await fetch("http://localhost:3000/funcionariosList"); 
+      if (!response.ok) {
+        throw new Error("Erro ao buscar peças");
+      }
+      const dados: Funcionario[] = await response.json();
+      setFuncionarios(dados);
+    } catch (error) {
+      console.error("Erro ao carregar aeronaves:", error);
+    }
+  };
+
+  useEffect(() => {
+    carregarPeças();
+  }, []);
+
   const openModal = async (funcionario?: Funcionario) => {
     if (funcionario) {
-      // Seu endpoint /funcionario/:id deve retornar o Endereço e Telefone aninhados
       const response = await fetch(`http://localhost:3000/funcionario/${funcionario.id}`);
       const data = await response.json();
 

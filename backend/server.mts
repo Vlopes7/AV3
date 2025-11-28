@@ -1,4 +1,3 @@
-// server.mts
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import cors from "cors";
@@ -197,7 +196,6 @@ app.post("/funcionario", async (req, res) => {
   try {
     const { nome, cpf, cargo, login, senha, endereco, telefone } = req.body;
 
-    // ESTA É A VALIDAÇÃO QUE GERA SEU ERRO
     if (!nome || !cpf || !cargo || !login || !senha || !endereco || !telefone) {
       return res
         .status(400)
@@ -324,6 +322,12 @@ app.delete("/funcionario/:id", async (req, res) => {
     return res.status(404).json({ error: "Funcionário não encontrado." });
   }
 });
+
+app.get("/funcionariosList", async (req, res) => {
+    const funcionarios = await prisma.funcionario.findMany();
+    return res.json(funcionarios);
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
