@@ -5,13 +5,13 @@ export enum tipoAeronave {
 
 export enum tipoPeca {
   Nacional = "Nacional",
-  Internacional = "Internacional",
+  Internacional = "Importada",
 }
 
 export enum statusPeca {
-  Producao = "Em Produção",
-  Estoque = "Em Estoque",
-  Pronta = "Pronta",
+  Producao = "Em_producao",
+  Estoque = "Em_transporte",
+  Pronta = "Pronta_para_uso",
 }
 
 export enum producao {
