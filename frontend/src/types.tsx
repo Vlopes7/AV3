@@ -1,7 +1,6 @@
 export enum tipoAeronave {
   Comercial = "Comercial",
-  Carga = "Carga",
-  Executiva = "Executiva",
+  Militar = "Militar",
 }
 
 export enum tipoPeca {

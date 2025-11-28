@@ -1,14 +1,10 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, useEffect, type ChangeEvent, type FormEvent } from "react";
 import { useOutletContext } from "react-router-dom";
 import Modal from "./Modal";
 
-import {
-  tipoAeronave,
-  type Aeronave,
-  type Peca
-} from "./types";
+import { tipoAeronave, type Aeronave, type Peca } from "./types";
 
-const estadoInicialForm: Omit<Aeronave, 'codigo'> = {
+const estadoInicialForm: Omit<Aeronave, "codigo"> = {
   modelo: "",
   tipo: tipoAeronave.Comercial,
   capacidade: 0,
@@ -21,46 +17,127 @@ interface OutletContextType {
   pecas: Peca[];
 }
 
+async function enviarAeronave(aeronave: Aeronave) {
+  try {
+    const response = await fetch("http://localhost:3000/aeronave", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(aeronave),
+    });
+
+    if (response.ok) {
+      alert("Aeronave cadastrada com sucesso!");
+    } else {
+      const data = await response.json();
+      alert("Falha ao cadastrar aeronave: " + (data.error || "Erro desconhecido"));
+    }
+  } catch (error) {
+    console.error("Erro ao enviar:", error);
+    alert("Erro ao conectar com o servidor.");
+  }
+}
+
 export function Aircrafts() {
   const { aeronaves, setAeronaves } = useOutletContext<OutletContextType>();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [novaAeronave, setNovaAeronave] = useState(estadoInicialForm);
+  const [aeronaveSelecionada, setAeronaveSelecionada] = useState<Aeronave | null>(null);
 
-  const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
+  const carregarAeronaves = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/aeronavesList"); 
+      if (!response.ok) {
+        throw new Error("Erro ao buscar aeronaves");
+      }
+      const dados: Aeronave[] = await response.json();
+      setAeronaves(dados);
+    } catch (error) {
+      console.error("Erro ao carregar aeronaves:", error);
+    }
+  };
+
+  useEffect(() => {
+    carregarAeronaves();
+  }, []);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setNovaAeronave({
       ...novaAeronave,
-      [name]:
-        name === "capacidade" || name === "autonomia"
-          ? Number(value)
-          : value,
+      [name]: name === "capacidade" || name === "autonomia" ? Number(value) : value,
     });
   };
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    const newEntry: Aeronave = {
-      ...novaAeronave,
-      codigo: Math.floor(Math.random() * 1000) + 100, 
-    };
-    setAeronaves([...aeronaves, newEntry]);
-    
-    setIsModalOpen(false);
-    setNovaAeronave(estadoInicialForm);
+  const abrirModalEdicao = (aeronave: Aeronave) => {
+    setAeronaveSelecionada(aeronave);
+    setNovaAeronave(aeronave);
+    setIsModalOpen(true);
   };
 
-  const handleDelete = (codigo: number) => {
-    if (window.confirm("Tem certeza que deseja excluir esta aeronave?")) {
-      setAeronaves(aeronaves.filter((a) => a.codigo !== codigo));
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (aeronaveSelecionada) {
+      const updated: Aeronave = { ...novaAeronave, codigo: aeronaveSelecionada.codigo };
+
+      try {
+        const response = await fetch("http://localhost:3000/aeronaveEdit", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updated),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          alert("Falha ao editar aeronave: " + (data.error || "Erro desconhecido"));
+          return;
+        }
+
+        alert("Aeronave editada com sucesso!");
+        setAeronaves((prev) =>
+          prev.map((a) => (a.codigo === updated.codigo ? updated : a))
+        );
+      } catch (error) {
+        console.error("Erro ao enviar:", error);
+        alert("Erro ao conectar com o servidor.");
+      }
+    } else {
+      const newEntry: Aeronave = {
+        ...novaAeronave,
+        codigo: Math.floor(Math.random() * 1000) + 100,
+      };
+      setAeronaves([...aeronaves, newEntry]);
+      await enviarAeronave(newEntry);
     }
+
+    setIsModalOpen(false);
+    setNovaAeronave(estadoInicialForm);
+    setAeronaveSelecionada(null);
   };
-  
-  const handleEdit = (aeronave: Aeronave) => {
-    console.log("Editar:", aeronave);
-    alert("Funcionalidade de Editar ainda não implementada.");
+
+  const handleDelete = async (codigo: number) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta aeronave?")) return;
+
+    setAeronaves(aeronaves.filter((a) => a.codigo !== codigo));
+
+    try {
+      const response = await fetch("http://localhost:3000/aeronaveDelete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codigo }),
+      });
+
+      if (response.status === 200) {
+        alert("Aeronave excluída com sucesso!");
+      } else {
+        const data = await response.json();
+        alert("Falha ao excluir aeronave: " + (data.error || "Erro desconhecido"));
+      }
+    } catch (error) {
+      console.error("Erro ao enviar:", error);
+      alert("Erro ao conectar com o servidor.");
+    }
   };
 
   return (
@@ -75,45 +152,53 @@ export function Aircrafts() {
 
       <div className="card">
         <table className="data-table">
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Modelo</th>
-            <th>Tipo</th>
-            <th>Capacidade</th>
-            <th>Autonomia (km)</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {aeronaves.map((aeronave) => (
-            <tr key={aeronave.codigo}>
-              <td>{aeronave.codigo}</td>
-              <td>{aeronave.modelo}</td>
-              <td>{aeronave.tipo}</td>
-              <td>{aeronave.capacidade}</td>
-              <td>{aeronave.autonomia} km</td>
-              <td className="actions-cell">
-                <button
-                  className="btn-secondary"
-                  onClick={() => handleEdit(aeronave)}
-                >
-                  Editar
-                </button>
-                <button
-                  className="btn-danger"
-                  onClick={() => handleDelete(aeronave.codigo)}
-                >
-                  Excluir
-                </button>
-              </td>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Modelo</th>
+              <th>Tipo</th>
+              <th>Capacidade</th>
+              <th>Autonomia (km)</th>
+              <th>Ações</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {aeronaves.map((aeronave) => (
+              <tr key={aeronave.codigo}>
+                <td>{aeronave.codigo}</td>
+                <td>{aeronave.modelo}</td>
+                <td>{aeronave.tipo}</td>
+                <td>{aeronave.capacidade}</td>
+                <td>{aeronave.autonomia} km</td>
+                <td className="actions-cell">
+                  <button
+                    className="btn-secondary"
+                    onClick={() => abrirModalEdicao(aeronave)}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    className="btn-danger"
+                    onClick={() => handleDelete(aeronave.codigo)}
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      <Modal title="Cadastrar Nova Aeronave" isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Modal
+        title={aeronaveSelecionada ? "Editar Aeronave" : "Cadastrar Nova Aeronave"}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setAeronaveSelecionada(null);
+          setNovaAeronave(estadoInicialForm);
+        }}
+      >
         <form className="modal-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="modelo">Modelo</label>
@@ -171,7 +256,11 @@ export function Aircrafts() {
             <button
               type="button"
               className="btn-secondary"
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => {
+                setIsModalOpen(false);
+                setAeronaveSelecionada(null);
+                setNovaAeronave(estadoInicialForm);
+              }}
             >
               Cancelar
             </button>
