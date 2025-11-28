@@ -79,27 +79,29 @@ app.post("/aeronave", async (req, res) => {
   }
 });
 
-app.post("/aeronaveDelete", async (req,res) => {
-    try{
-       const { codigo } = req.body
+app.post("/aeronaveDelete", async (req, res) => {
+  try {
+    const { codigo } = req.body;
 
-        const aeronave = await prisma.aeronave.delete({
-            where:{codigo}
-        })
+    const aeronave = await prisma.aeronave.delete({
+      where: { codigo },
+    });
 
-        return res.status(200)
-    }catch(error){
-        console.log(error)
-        return res.status(500).json({error: "Erro ao deletar a aeronave"})
-    }
-})
+    return res.status(200);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "Erro ao deletar a aeronave" });
+  }
+});
 
 app.put("/aeronaveEdit", async (req, res) => {
   try {
     const { codigo, modelo, tipo, capacidade, autonomia } = req.body;
 
     if (!codigo) {
-      return res.status(400).json({ error: "Código da aeronave é obrigatório." });
+      return res
+        .status(400)
+        .json({ error: "Código da aeronave é obrigatório." });
     }
 
     const aeronaveAtualizada = await prisma.aeronave.update({
@@ -120,8 +122,76 @@ app.put("/aeronaveEdit", async (req, res) => {
 });
 
 app.get("/aeronavesList", async (req, res) => {
-    const aeronaves = await prisma.aeronave.findMany()
-    return res.json(aeronaves)
+  const aeronaves = await prisma.aeronave.findMany();
+  return res.json(aeronaves);
+});
+
+app.post("/peca", async (req, res) => {
+  try {
+    const { id, nome, tipo, fornecedor, status, aeronaveId } = req.body;
+
+    if (!nome || !tipo || !aeronaveId) {
+      return res.status(400).json({ error: "Campos obrigatórios faltando." });
+    }
+
+    const peca = await prisma.peca.create({
+      data: {
+        id,
+        nome,
+        tipo,
+        fornecedor,
+        status: status,
+        aeronaveId,
+      },
+    });
+
+    return res.status(201).json(peca);
+  } catch (error) {
+    console.error("Erro ao criar peça:", error);
+    return res.status(500).json({ error: "Erro ao criar peça." });
+  }
+});
+
+app.post("/pecaDelete", async (req, res) => {
+  try {
+    const { id } = req.body;
+
+    const peça = await prisma.peca.delete({
+      where: { id: id },
+    });
+
+    return res.status(200).json(peça);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "Erro ao deletar a aeronave" });
+  }
+});
+
+app.put("/pecaEdit", async (req, res) => {
+  try {
+    const { id, nome, fornecedor, status, aeronaveId } = req.body;
+
+    const peçaAtualizada = await prisma.peca.update({
+      where: { id: Number(id) },
+      data: {
+        nome,
+        fornecedor,
+        status,
+        aeronaveId,
+      },
+    });
+
+    return res.status(200).json(peçaAtualizada);
+  } catch (error) {
+    console.log(error);
+    return res.status(500);
+  }
+});
+
+
+app.get("/pecasList", async (req, res) => {
+    const peças = await prisma.peca.findMany()
+    return res.json(peças)
 })
 
 app.listen(PORT, () => {
