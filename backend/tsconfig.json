@@ -1,0 +1,46 @@
+{
+  // Visit https://aka.ms/tsconfig to read more about this file
+  "compilerOptions": {
+    // --- Configurações para ts-node-dev e ESM (recomendado para Node.js moderno) ---
+    // Usar "NodeNext" ou "Node16" para suportar a sintaxe de módulos ES (import/export) no Node.js
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+
+    // NECESSÁRIO para permitir importações que terminam em '.ts' (resolve o erro TS5097)
+    "allowImportingTsExtensions": true,
+    
+    // O ts-node-dev compila em memória; este comando evita que o TypeScript gere arquivos .js desnecessários
+    "noEmit": true, 
+    
+    // Configuração de Tipos (Recomendado para Node.js)
+    "lib": ["esnext"],
+    "types": ["node"],
+    
+    // O `ts-node-dev` usa o diretório de arquivos de origem
+    "rootDir": "./", 
+
+    // --- Configurações que você já tinha ou são boas práticas ---
+    
+    // Stricter Typechecking Options
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Recommended Options
+    "strict": true,
+    "isolatedModules": true, // Boa prática para ambientes com bundlers/ts-node-dev
+    "noUncheckedSideEffectImports": true,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    
+    // Outras saídas (mantidas, mas podem ser removidas se usar apenas `noEmit: true`)
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+    
+    // Otimizando outras flags
+    "verbatimModuleSyntax": false, // Geralmente não é necessário com NodeNext/Node16
+    "jsx": "react-jsx" // Pode ser removido se não estiver usando JSX
+  },
+  "include": ["**/*.ts", "server.mts", "seed.ts"] // Garante que todos os arquivos TypeScript sejam incluídos
+}
