@@ -43,7 +43,6 @@ CREATE TABLE `Aeronave` (
     `tipo` ENUM('Comercial', 'Militar') NOT NULL,
     `capacidade` INTEGER NOT NULL,
     `autonomia` INTEGER NOT NULL,
-    `testes` JSON NULL,
 
     UNIQUE INDEX `Aeronave_codigo_key`(`codigo`),
     PRIMARY KEY (`codigo`)
@@ -67,6 +66,17 @@ CREATE TABLE `Etapa` (
     `nome` VARCHAR(100) NOT NULL,
     `dataPrevista` DATE NOT NULL,
     `status` ENUM('Pendente', 'Em_andamento', 'Concluido') NOT NULL,
+    `aeronaveId` INTEGER NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Teste` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `tipo` ENUM('Eletrico', 'Hidraulico', 'Aerodinamico') NOT NULL,
+    `data` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `resultado` ENUM('Aprovado', 'Reprovado') NOT NULL,
     `aeronaveId` INTEGER NOT NULL,
 
     PRIMARY KEY (`id`)
@@ -105,6 +115,9 @@ ALTER TABLE `Peca` ADD CONSTRAINT `Peca_aeronaveId_fkey` FOREIGN KEY (`aeronaveI
 
 -- AddForeignKey
 ALTER TABLE `Etapa` ADD CONSTRAINT `Etapa_aeronaveId_fkey` FOREIGN KEY (`aeronaveId`) REFERENCES `Aeronave`(`codigo`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Teste` ADD CONSTRAINT `Teste_aeronaveId_fkey` FOREIGN KEY (`aeronaveId`) REFERENCES `Aeronave`(`codigo`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `EtapaFuncionario` ADD CONSTRAINT `EtapaFuncionario_etapaId_fkey` FOREIGN KEY (`etapaId`) REFERENCES `Etapa`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

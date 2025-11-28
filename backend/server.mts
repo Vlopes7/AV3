@@ -328,6 +328,129 @@ app.get("/funcionariosList", async (req, res) => {
     return res.json(funcionarios);
 })
 
+
+
+
+
+
+app.post("/teste", async (req, res) => {
+    try {
+        const { aeronaveId, tipo, resultado, data } = req.body;
+        const aeronaveIdNum = Number(aeronaveId);
+
+        // 1. Validação
+        if (!aeronaveIdNum || !tipo || !resultado) {
+            return res.status(400).json({ error: "Campos obrigatórios faltando." });
+        }
+
+        // 2. Tenta encontrar um teste existente para esta aeronave e tipo
+        const testeExistente = await prisma.teste.findFirst({
+            where: {
+                aeronaveId: aeronaveIdNum,
+                tipo: tipo, // Usa o enum TipoTeste
+            },
+            // Garante que pega o mais recente, caso haja mais de um (se você mantiver a tabela sem @@unique)
+            orderBy: {
+                data: 'desc',
+            }
+        });
+
+        // 3. Lógica Condicional (Aprovado, Reprovado, Inexistente)
+        
+        if (testeExistente) {
+            
+            // 3a. CASO 1: Teste JÁ EXISTE e está APROVADO
+            if (testeExistente.resultado === 'Aprovado') {
+                return res.status(403).json({ 
+                    error: `O teste de ${tipo} para a aeronave ${aeronaveId} já foi APROVADO e não pode ser alterado.` 
+                });
+            }
+
+            // 3b. CASO 2: Teste JÁ EXISTE e está REPROVADO -> Permite a atualização (PUT)
+            if (testeExistente.resultado === 'Reprovado') {
+                const testeAtualizado = await prisma.teste.update({
+                    where: {
+                        id: testeExistente.id, // Usa o ID do registro que será atualizado
+                    },
+                    data: {
+                        resultado: resultado,
+                        data: new Date(), // Atualiza a data/hora para o momento da correção
+                    }
+                });
+
+                return res.status(200).json({ 
+                    message: `Resultado de teste ${tipo} atualizado com sucesso.`, 
+                    teste: testeAtualizado 
+                });
+            }
+            
+            // Nota: Se houver outros status no futuro, eles cairiam aqui.
+
+        } else {
+            
+            // 3c. CASO 3: Teste NÃO EXISTE -> Cria um novo registro (POST)
+            const novoTeste = await prisma.teste.create({
+                data: {
+                    aeronaveId: aeronaveIdNum,
+                    tipo: tipo,
+                    resultado: resultado,
+                    data: data ? new Date(data) : new Date(), 
+                }
+            });
+
+            return res.status(201).json({ 
+                message: `Novo teste ${tipo} registrado com sucesso.`,
+                teste: novoTeste 
+            });
+        }
+    } catch (error) {
+        console.error("Erro no processamento do teste:", error);
+        
+        if (error === 'P2003') { 
+            return res.status(404).json({ error: "Aeronave não encontrada. Verifique o código da aeronave." });
+        }
+
+        return res.status(500).json({ error: "Erro interno do servidor.", detalhe: error });
+    }
+});
+
+app.get("/testes/:aeronaveId", async (req, res) => {
+    try {
+        const aeronaveId = parseInt(req.params.aeronaveId);
+
+        // 1. Validação do ID
+        if (isNaN(aeronaveId)) {
+            return res.status(400).json({ error: "O ID da aeronave deve ser um número válido." });
+        }
+
+        // 2. Busca no banco de dados usando Prisma
+        // Utilizamos findMany para retornar todos os registros que atendem à condição.
+        const historicoTestes = await prisma.teste.findMany({
+            where: {
+                aeronaveId: aeronaveId,
+            },
+            // Ordenamos pelo campo 'data' em ordem decrescente (mais recente primeiro)
+            orderBy: {
+                data: 'desc',
+            },
+        });
+
+        // 3. Resposta de sucesso (retorna array vazio se não houver registros)
+        // O frontend já está preparado para lidar com um array vazio (testesHistorico.length === 0)
+        return res.status(200).json(historicoTestes);
+
+    } catch (error) {
+        console.error("Erro ao buscar histórico de testes:", error);
+        // Em caso de erro, retorna 500
+        return res.status(500).json({ error: "Erro interno do servidor ao buscar histórico de testes." });
+    }
+});
+
+
+
+
+
+
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });

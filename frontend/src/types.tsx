@@ -43,10 +43,9 @@ export enum producao {
 }
 
 export enum tipoTeste {
-  Estrutural = "Estrutural",
-  Avionico = "Aviônico",
-  Motor = "Motor",
-  Voo = "Voo",
+  Eletrico = "Eletrico",
+  Hidraulico = "Hidraulico",
+  Aerodinamico = "Aerodinamico",
 }
 
 export enum Hierarquia {
