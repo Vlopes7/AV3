@@ -193,58 +193,70 @@ app.get("/pecasList", async (req, res) => {
 });
 
 app.post("/funcionario", async (req, res) => {
-  try {
-    const { nome, cpf, cargo, login, senha, endereco, telefone } = req.body;
+    try {
+        const { nome, cpf, cargo, login, senha, endereco, telefone } = req.body;
 
-    if (!nome || !cpf || !cargo || !login || !senha || !endereco || !telefone) {
-      return res.status(400).json({
-        error:
-          "Todos os campos (incluindo Endereço e Telefone) são obrigatórios.",
-      });
+        if (!nome || !cpf || !cargo || !login || !senha || !endereco || !telefone) {
+            return res.status(400).json({
+                error:
+                    "Todos os campos (incluindo Endereço e Telefone) são obrigatórios.",
+            });
+        }
+
+        const [novoEndereco, novoTelefone, novoFuncionario] =
+            await prisma.$transaction([
+                prisma.endereco.create({
+                    data: {
+                        rua: endereco.rua,
+                        numero: endereco.numero,
+                        bairro: endereco.bairro,
+                        cidade: endereco.cidade,
+                    },
+                }),
+
+                prisma.telefone.create({
+                    data: {
+                        ddd: telefone.ddd,
+                        numero: telefone.numero,
+                    },
+                }),
+
+                prisma.funcionario.create({
+                    data: { nome, cpf, cargo, login, senha },
+                }),
+            ]);
+        
+        const newUser = await prisma.user.create({
+            data: {
+                email: login,
+                password: senha,
+                funcionarioId: novoFuncionario.id, 
+            },
+        });
+
+        const funcionarioCompleto = await prisma.funcionario.update({
+            where: { id: novoFuncionario.id },
+            data: {
+                endereco: { connect: { id: novoEndereco.id } },
+                telefone: { connect: { id: novoTelefone.id } },
+            },
+            include: {
+                endereco: true,
+                telefone: true,
+                user: true, 
+            },
+        });
+
+        return res.status(201).json(funcionarioCompleto);
+    } catch (error) {
+        console.error(error);
+        
+        if (error === 'P2002') { 
+             return res.status(400).json({ error: "CPF ou Login (Email) já cadastrado. Por favor, utilize outro." });
+        }
+        
+        return res.status(500).json({ error: "Erro ao criar funcionário", detalhe: error });
     }
-
-    const [novoEndereco, novoTelefone, novoFuncionario] =
-      await prisma.$transaction([
-        prisma.endereco.create({
-          data: {
-            rua: endereco.rua,
-            numero: endereco.numero,
-            bairro: endereco.bairro,
-            cidade: endereco.cidade,
-          },
-        }),
-
-        prisma.telefone.create({
-          data: {
-            ddd: telefone.ddd,
-            numero: telefone.numero,
-          },
-        }),
-
-        prisma.funcionario.create({
-          data: { nome, cpf, cargo, login, senha },
-        }),
-      ]);
-
-    const funcionarioCompleto = await prisma.funcionario.update({
-      where: { id: novoFuncionario.id },
-      data: {
-        endereco: { connect: { id: novoEndereco.id } },
-        telefone: { connect: { id: novoTelefone.id } },
-      },
-      include: {
-        endereco: true,
-        telefone: true,
-      },
-    });
-
-    return res.status(201).json(funcionarioCompleto);
-  } catch (error) {
-    console.error(error);
-    return res
-      .status(500)
-      .json({ error: "Erro ao criar funcionário", detalhe: error });
-  }
 });
 
 app.put("/funcionarioEdit", async (req, res) => {
@@ -623,6 +635,8 @@ app.get("/funcionariosListAll", async (req, res) => {
 
 
 app.post("/gerarRelatorio", async (req, res) => {
+    const startTime = performance.now();
+
     try {
         const { aeronaveId, autor } = req.body;
         const aeronaveIdNum = Number(aeronaveId);
@@ -646,12 +660,11 @@ app.post("/gerarRelatorio", async (req, res) => {
             return res.status(403).json({ error: `Relatório negado: As seguintes etapas ainda não estão concluídas: ${nomesEtapasPendentes}` });
         }
 
-        
         const todosTestes = await prisma.teste.findMany({
             where: { aeronaveId: aeronaveIdNum },
-            orderBy: { data: 'desc' }, // Pega o mais recente primeiro
+            orderBy: { data: 'desc' },
         });
-        
+
         const ultimoResultadoPorTipo = todosTestes.reduce((acc, teste) => {
             if (!acc.has(teste.tipo)) {
                 acc.set(teste.tipo, teste.resultado);
@@ -666,7 +679,7 @@ app.post("/gerarRelatorio", async (req, res) => {
             const tiposReprovados = testesReprovados.map(([tipo]) => tipo).join(', ');
             return res.status(403).json({ error: `Relatório negado: Os seguintes testes não foram aprovados (status final): ${tiposReprovados}` });
         }
-        
+
         const aeronave = await prisma.aeronave.findUnique({
             where: { codigo: aeronaveIdNum },
             include: {
@@ -685,16 +698,20 @@ app.post("/gerarRelatorio", async (req, res) => {
                 }
             }
         });
-        
+
         if (!aeronave) {
             return res.status(404).json({ error: "Aeronave não encontrada." });
         }
+
+        const endTime = performance.now();
+        const tempoProcessamento = (endTime - startTime).toFixed(3);
 
         return res.status(200).json({
             aeronave,
             relatorioInfo: {
                 dataGeracao: new Date().toISOString(),
-                autor: autor
+                autor: autor,
+                tempoProcessamento: `${tempoProcessamento} ms`
             }
         });
 

@@ -8,10 +8,17 @@ import {
 import Modal from "./Modal";
 
 type FuncionarioCadastroPayload = Omit<Funcionario, "id"> & {
-    endereco: Omit<Endereco, "id" | "funcionarioId">;
-    telefone: Omit<Telefone, "id" | "funcionarioId">;
+  endereco: Omit<Endereco, "id" | "funcionarioId">;
+  telefone: Omit<Telefone, "id" | "funcionarioId">;
 };
 
+const formatCPF = (cpf: string) => {
+  const numericCPF = cpf.replace(/\D/g, "");
+  return numericCPF
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d{1,2})/, "$1.$2.$3-$4");
+};
 
 async function cadastrarFuncionario(funcionario: FuncionarioCadastroPayload) {
   try {
@@ -25,7 +32,9 @@ async function cadastrarFuncionario(funcionario: FuncionarioCadastroPayload) {
       return await response.json();
     } else {
       const data = await response.json();
-      alert("Falha ao cadastrar funcionário: " + (data.error || "Erro desconhecido"));
+      alert(
+        "Falha ao cadastrar funcionário: " + (data.error || "Erro desconhecido")
+      );
       return null;
     }
   } catch (error) {
@@ -37,20 +46,19 @@ async function cadastrarFuncionario(funcionario: FuncionarioCadastroPayload) {
 
 async function editarFuncionario(funcionario: Funcionario): Promise<boolean> {
   try {
-    const response = await fetch(
-      `http://localhost:3000/funcionarioEdit`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(funcionario),
-      }
-    );
+    const response = await fetch(`http://localhost:3000/funcionarioEdit`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(funcionario),
+    });
 
     if (response.ok) {
       return true;
     } else {
       const data = await response.json();
-      alert("Falha ao editar funcionário: " + (data.error || "Erro desconhecido"));
+      alert(
+        "Falha ao editar funcionário: " + (data.error || "Erro desconhecido")
+      );
       return false;
     }
   } catch (error) {
@@ -68,7 +76,9 @@ async function deletarFuncionario(id: number) {
 
     if (!response.ok) {
       const data = await response.json();
-      alert("Falha ao excluir funcionário: " + (data.error || "Erro desconhecido"));
+      alert(
+        "Falha ao excluir funcionário: " + (data.error || "Erro desconhecido")
+      );
     }
   } catch (error) {
     console.error(error);
@@ -80,7 +90,9 @@ function Employees() {
   const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [step, setStep] = useState(1);
-  const [editingEmployee, setEditingEmployee] = useState<Funcionario | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<Funcionario | null>(
+    null
+  );
 
   const initialEmployeeState: Omit<Funcionario, "id"> = {
     nome: "",
@@ -112,13 +124,25 @@ function Employees() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    if (step === 1) setNewEmployee((prev) => ({ ...prev, [name]: value }));
+
+    if (step === 1) {
+      setNewEmployee((prev) => ({
+        ...prev,
+        [name]: name === "cpf" ? formatCPF(value) : value,
+      }));
+    }
+
     if (step === 2)
       setNewEndereco((prev) => ({
         ...prev,
         [name]: name === "numero" ? parseInt(value) : value,
       }));
-    if (step === 3) setNewTelefone((prev) => ({ ...prev, [name]: value }));
+
+    if (step === 3)
+      setNewTelefone((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
   };
 
   const handleNextStep = () => {
@@ -133,11 +157,11 @@ function Employees() {
     e.preventDefault();
 
     if (editingEmployee) {
-      const updatedEmployee = { 
-        ...editingEmployee, 
-        ...newEmployee, 
-        endereco: newEndereco, 
-        telefone: newTelefone
+      const updatedEmployee = {
+        ...editingEmployee,
+        ...newEmployee,
+        endereco: newEndereco,
+        telefone: newTelefone,
       };
 
       const success = await editarFuncionario(updatedEmployee as Funcionario);
@@ -151,8 +175,8 @@ function Employees() {
       }
     } else {
       const completeEmployeeData: FuncionarioCadastroPayload = {
-        ...newEmployee, 
-        endereco: newEndereco, 
+        ...newEmployee,
+        endereco: newEndereco,
         telefone: newTelefone,
       };
 
@@ -170,9 +194,9 @@ function Employees() {
     setStep(1);
   };
 
-  const carregarPeças= async () => {
+  const carregarPeças = async () => {
     try {
-      const response = await fetch("http://localhost:3000/funcionariosList"); 
+      const response = await fetch("http://localhost:3000/funcionariosList");
       if (!response.ok) {
         throw new Error("Erro ao buscar peças");
       }
@@ -189,7 +213,9 @@ function Employees() {
 
   const openModal = async (funcionario?: Funcionario) => {
     if (funcionario) {
-      const response = await fetch(`http://localhost:3000/funcionario/${funcionario.id}`);
+      const response = await fetch(
+        `http://localhost:3000/funcionario/${funcionario.id}`
+      );
       const data = await response.json();
 
       if (!data || data.error) {
@@ -267,6 +293,7 @@ function Employees() {
                   value={newEmployee.cpf}
                   onChange={handleInputChange}
                   required
+                  maxLength={14} 
                 />
               </div>
 
@@ -430,11 +457,17 @@ function Employees() {
                 <td>{f.login}</td>
 
                 <td className="actions-cell">
-                  <button className="btn-secondary" onClick={() => openModal(f)}>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => openModal(f)}
+                  >
                     Editar
                   </button>
 
-                  <button className="btn-danger" onClick={() => handleDelete(f.id)}>
+                  <button
+                    className="btn-danger"
+                    onClick={() => handleDelete(f.id)}
+                  >
                     Excluir
                   </button>
                 </td>
