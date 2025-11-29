@@ -331,18 +331,15 @@ app.post("/teste", async (req, res) => {
     const { aeronaveId, tipo, resultado, data } = req.body;
     const aeronaveIdNum = Number(aeronaveId);
 
-    // 1. Validação
     if (!aeronaveIdNum || !tipo || !resultado) {
       return res.status(400).json({ error: "Campos obrigatórios faltando." });
     }
 
-    // 2. Tenta encontrar um teste existente para esta aeronave e tipo
     const testeExistente = await prisma.teste.findFirst({
       where: {
         aeronaveId: aeronaveIdNum,
-        tipo: tipo, // Usa o enum TipoTeste
+        tipo: tipo,
       },
-      // Garante que pega o mais recente, caso haja mais de um (se você mantiver a tabela sem @@unique)
       orderBy: {
         data: "desc",
       },
@@ -351,22 +348,20 @@ app.post("/teste", async (req, res) => {
     // 3. Lógica Condicional (Aprovado, Reprovado, Inexistente)
 
     if (testeExistente) {
-      // 3a. CASO 1: Teste JÁ EXISTE e está APROVADO
       if (testeExistente.resultado === "Aprovado") {
         return res.status(403).json({
           error: `O teste de ${tipo} para a aeronave ${aeronaveId} já foi APROVADO e não pode ser alterado.`,
         });
       }
 
-      // 3b. CASO 2: Teste JÁ EXISTE e está REPROVADO -> Permite a atualização (PUT)
       if (testeExistente.resultado === "Reprovado") {
         const testeAtualizado = await prisma.teste.update({
           where: {
-            id: testeExistente.id, // Usa o ID do registro que será atualizado
+            id: testeExistente.id,
           },
           data: {
             resultado: resultado,
-            data: new Date(), // Atualiza a data/hora para o momento da correção
+            data: new Date(),
           },
         });
 
@@ -376,9 +371,7 @@ app.post("/teste", async (req, res) => {
         });
       }
 
-      // Nota: Se houver outros status no futuro, eles cairiam aqui.
     } else {
-      // 3c. CASO 3: Teste NÃO EXISTE -> Cria um novo registro (POST)
       const novoTeste = await prisma.teste.create({
         data: {
           aeronaveId: aeronaveIdNum,
@@ -414,31 +407,24 @@ app.get("/testes/:aeronaveId", async (req, res) => {
   try {
     const aeronaveId = parseInt(req.params.aeronaveId);
 
-    // 1. Validação do ID
     if (isNaN(aeronaveId)) {
       return res
         .status(400)
         .json({ error: "O ID da aeronave deve ser um número válido." });
     }
 
-    // 2. Busca no banco de dados usando Prisma
-    // Utilizamos findMany para retornar todos os registros que atendem à condição.
     const historicoTestes = await prisma.teste.findMany({
       where: {
         aeronaveId: aeronaveId,
       },
-      // Ordenamos pelo campo 'data' em ordem decrescente (mais recente primeiro)
       orderBy: {
         data: "desc",
       },
     });
 
-    // 3. Resposta de sucesso (retorna array vazio se não houver registros)
-    // O frontend já está preparado para lidar com um array vazio (testesHistorico.length === 0)
     return res.status(200).json(historicoTestes);
   } catch (error) {
     console.error("Erro ao buscar histórico de testes:", error);
-    // Em caso de erro, retorna 500
     return res
       .status(500)
       .json({
@@ -465,7 +451,6 @@ app.post("/etapa", async (req, res) => {
         });
     }
 
-    // Converte IDs de funcionários para o formato de conexão many-to-many
     const funcionariosConnect = funcionarioIds.map((id) => ({
       funcionarioId: Number(id),
     }));
@@ -474,7 +459,7 @@ app.post("/etapa", async (req, res) => {
       data: {
         nome,
         dataPrevista: new Date(dataPrevista),
-        status: "Pendente", // Enum StatusProducao.Pendente
+        status: "Pendente",
         aeronaveId: Number(aeronaveId),
         funcionarios: {
           create: funcionariosConnect,
@@ -498,7 +483,6 @@ app.get("/etapasList", async (req, res) => {
   try {
     const etapas = await prisma.etapa.findMany({
       include: {
-        // Inclui a relação com funcionários para exibição/edição
         funcionarios: {
           include: {
             funcionario: {
@@ -534,7 +518,6 @@ app.put("/etapaEdit", async (req, res) => {
       return res.status(404).json({ error: "Etapa não encontrada." });
     }
 
-    // Lógica de Status: Se já estiver Concluído, não permite reabrir (alterar para outro status)
     if (etapaExistente.status === "Concluido" && status !== "Concluido") {
       return res
         .status(403)
@@ -544,24 +527,19 @@ app.put("/etapaEdit", async (req, res) => {
         });
     }
 
-    // 1. Prepara dados para atualização (apenas campos escalares)
     const dataToUpdate = {
       nome: nome,
       dataPrevista: new Date(dataPrevista),
       status: status,
-      aeronaveId: Number(aeronaveId), // Inclui explicitamente, se necessário
+      aeronaveId: Number(aeronaveId),
     };
 
-    // 2. Atualiza a Etapa e suas Associações (Transação)
     const etapaAtualizada = await prisma.$transaction(async (prisma) => {
-      // Se IDs de funcionários foram passados, manipula associações
       if (funcionarioIds && Array.isArray(funcionarioIds)) {
-        // Remove todos os funcionários atuais da EtapaFuncionario
         await prisma.etapaFuncionario.deleteMany({
           where: { etapaId: etapaId },
         });
 
-        // Cria novas associações
         if (funcionarioIds.length > 0) {
           const connectFuncs = funcionarioIds.map((id) => ({
             etapaId: etapaId,
@@ -573,14 +551,12 @@ app.put("/etapaEdit", async (req, res) => {
         }
       }
 
-      // Atualiza os dados escalares da Etapa
       return prisma.etapa.update({
         where: { id: etapaId },
         data: dataToUpdate,
       });
     });
 
-    // Retorna a etapa completa com os nomes dos funcionários após a transação
     const etapaCompleta = await prisma.etapa.findUnique({
       where: { id: etapaId },
       include: {
@@ -611,13 +587,10 @@ app.delete("/etapaDelete/:id", async (req, res) => {
       return res.status(400).json({ error: "ID da etapa inválido." });
     }
 
-    // Transação para deletar associações e a etapa principal
     await prisma.$transaction([
-      // 1. Deleta as associações EtapaFuncionario
       prisma.etapaFuncionario.deleteMany({
         where: { etapaId: id },
       }),
-      // 2. Deleta a Etapa
       prisma.etapa.delete({
         where: { id },
       }),
@@ -638,7 +611,7 @@ app.get("/funcionariosListAll", async (req, res) => {
       select: {
         id: true,
         nome: true,
-        cargo: true, // Útil para contexto
+        cargo: true,
       },
     });
     return res.json(funcionarios);
@@ -646,6 +619,89 @@ app.get("/funcionariosListAll", async (req, res) => {
     console.error("Erro ao listar funcionários:", error);
     return res.status(500).json({ error: "Erro ao listar funcionários." });
   }
+});
+
+
+app.post("/gerarRelatorio", async (req, res) => {
+    try {
+        const { aeronaveId, autor } = req.body;
+        const aeronaveIdNum = Number(aeronaveId);
+
+        if (!aeronaveIdNum || !autor) {
+            return res.status(400).json({ error: "Aeronave e Autor do relatório são obrigatórios." });
+        }
+
+        const etapas = await prisma.etapa.findMany({
+            where: { aeronaveId: aeronaveIdNum },
+            select: { status: true, id: true, nome: true },
+        });
+
+        if (etapas.length === 0) {
+            return res.status(403).json({ error: `Relatório negado: Nenhuma etapa de produção encontrada para a aeronave ${aeronaveId}.` });
+        }
+
+        const etapasNaoConcluidas = etapas.filter(e => e.status !== 'Concluido');
+        if (etapasNaoConcluidas.length > 0) {
+            const nomesEtapasPendentes = etapasNaoConcluidas.map(e => e.nome).join(', ');
+            return res.status(403).json({ error: `Relatório negado: As seguintes etapas ainda não estão concluídas: ${nomesEtapasPendentes}` });
+        }
+
+        
+        const todosTestes = await prisma.teste.findMany({
+            where: { aeronaveId: aeronaveIdNum },
+            orderBy: { data: 'desc' }, // Pega o mais recente primeiro
+        });
+        
+        const ultimoResultadoPorTipo = todosTestes.reduce((acc, teste) => {
+            if (!acc.has(teste.tipo)) {
+                acc.set(teste.tipo, teste.resultado);
+            }
+            return acc;
+        }, new Map());
+
+        const testesReprovados = Array.from(ultimoResultadoPorTipo.entries())
+            .filter(([, resultado]) => resultado !== 'Aprovado');
+
+        if (testesReprovados.length > 0) {
+            const tiposReprovados = testesReprovados.map(([tipo]) => tipo).join(', ');
+            return res.status(403).json({ error: `Relatório negado: Os seguintes testes não foram aprovados (status final): ${tiposReprovados}` });
+        }
+        
+        const aeronave = await prisma.aeronave.findUnique({
+            where: { codigo: aeronaveIdNum },
+            include: {
+                pecas: true,
+                etapas: {
+                    include: {
+                        funcionarios: {
+                            include: {
+                                funcionario: { select: { nome: true, cargo: true } }
+                            }
+                        }
+                    }
+                },
+                testes: {
+                    orderBy: { data: 'desc' }
+                }
+            }
+        });
+        
+        if (!aeronave) {
+            return res.status(404).json({ error: "Aeronave não encontrada." });
+        }
+
+        return res.status(200).json({
+            aeronave,
+            relatorioInfo: {
+                dataGeracao: new Date().toISOString(),
+                autor: autor
+            }
+        });
+
+    } catch (error) {
+        console.error("Erro ao gerar relatório:", error);
+        return res.status(500).json({ error: "Erro interno do servidor ao gerar relatório." });
+    }
 });
 
 app.listen(PORT, () => {

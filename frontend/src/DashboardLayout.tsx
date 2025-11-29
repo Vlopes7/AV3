@@ -5,7 +5,7 @@ import { type Peca, type Etapa, type Aeronave } from './types';
 import { useAuth } from './AuthContext'; 
 
 function DashboardLayout() {
-  const { logout } = useAuth(); 
+  const { logout } = useAuth();
   const [pecas, setPecas] = useState<Peca[]>([]);
   const [etapas, setEtapas] = useState<Etapa[]>([]);
   const [aeronaves, setAeronaves] = useState<Aeronave[]>([]);

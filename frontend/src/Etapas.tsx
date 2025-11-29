@@ -230,13 +230,6 @@ function Etapas() {
     }));
   };
 
-  const openModal = () => {
-    setEditingEtapa(null);
-    setCurrentEtapa(initialEtapaState);
-    setSelectedFuncionarioIds([]);
-    setIsModalOpen(true);
-  };
-
   const handleEdit = (etapa: Etapa) => {
     setEditingEtapa(etapa);
     setCurrentEtapa(etapa);
@@ -383,13 +376,6 @@ function Etapas() {
 
       {/* INÍCIO DO CARD REVERTIDO */}
       <div className="card">
-        <div className="table-actions">
-          {/* BOTÃO "Criar Nova Etapa" REMOVIDO daqui, mantendo-o apenas no Modal */}
-          {/* Se você precisar do botão Criar Nova Etapa aqui, adicione: 
-                    <button className="btn-primary" onClick={openModal}>Criar Nova Etapa</button>
-                    */}
-        </div>
-
         <table className="data-table">
           <thead>
             <tr>

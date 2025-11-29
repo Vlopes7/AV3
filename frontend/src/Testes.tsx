@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { useOutletContext } from "react-router-dom";
 import { tipoTeste, type Aeronave } from "./types";
 
-// Componente Modal Simples (Necessário para exibir o histórico)
-// No seu projeto, este deve ser importado de './Modal'.
 interface ModalProps {
   title: string;
   isOpen: boolean;
@@ -51,12 +49,10 @@ function Testes() {
   );
   const [testesHistorico, setTestesHistorico] = useState<Teste[]>([]);
   const [isHistoricoModalOpen, setIsHistoricoModalOpen] = useState(false);
-  // NOVO ESTADO: Para gerenciar erros de busca (substituindo o alert)
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Função para buscar o histórico de testes da aeronave selecionada
   const fetchHistorico = async (aeronaveId: number) => {
-    setFetchError(null); // Limpa erros anteriores
+    setFetchError(null);
     try {
       const response = await fetch(
         `http://localhost:3000/testes/${aeronaveId}`
@@ -64,14 +60,12 @@ function Testes() {
       if (response.ok) {
         const data = await response.json();
         setTestesHistorico(data);
-        // Se não houver dados, definimos uma mensagem no histórico (dentro do modal)
         if (data.length === 0) {
           setFetchError("Nenhum teste encontrado para a aeronave selecionada.");
         } else {
           setFetchError(null);
         }
       } else {
-        // Erro no servidor (ex: 404, 500)
         setFetchError(
           "Falha ao carregar o histórico de testes. Tente novamente mais tarde."
         );
@@ -79,7 +73,6 @@ function Testes() {
       }
     } catch (error) {
       console.error("Erro ao buscar histórico:", error);
-      // Erro de rede/conexão
       setFetchError(
         "Erro de conexão com o servidor. Verifique se o backend está rodando."
       );
@@ -87,7 +80,6 @@ function Testes() {
     }
   };
 
-  // Efeito para buscar o histórico sempre que a aeronave selecionada mudar
   useEffect(() => {
     if (selectedAeronaveId && selectedAeronaveId !== 0) {
       fetchHistorico(selectedAeronaveId);
@@ -99,7 +91,7 @@ function Testes() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setFetchError(null); // Limpa erros no submit
+    setFetchError(null);
     const formData = new FormData(e.currentTarget);
 
     const aeronaveIdValue = Number(formData.get("aeronaveId"));
@@ -125,19 +117,16 @@ function Testes() {
 
       if (!response.ok) {
         const data = await response.json();
-        // Exibe erro do servidor na UI
         setFetchError(
           "Falha ao registrar teste: " + (data.error || "Erro desconhecido")
         );
         return;
       }
 
-      // Se o teste foi registrado com sucesso, atualiza o histórico
       await fetchHistorico(dadosTeste.aeronaveId);
-      setFetchError("Resultado do teste registrado com sucesso!"); // Mensagem de sucesso
+      setFetchError("Resultado do teste registrado com sucesso!");
     } catch (error) {
       console.error("Erro ao enviar:", error);
-      // Erro de rede/conexão no submit
       setFetchError("Erro ao conectar com o servidor para registrar o teste.");
       return;
     }
@@ -156,7 +145,6 @@ function Testes() {
     <div>
       <h1>Controle de Qualidade (Testes)</h1>
 
-      {/* Exibição da Mensagem de Erro ou Sucesso */}
       {fetchError && (
         <div
           className={`p-4 mb-4 rounded-lg text-white ${
@@ -212,7 +200,6 @@ function Testes() {
               Registrar Teste
             </button>
 
-            {/* Botão de consulta que aparece apenas se uma aeronave válida for selecionada */}
             {selectedAeronaveId && selectedAeronaveId !== 0 && (
               <button
                 type="button"
@@ -226,7 +213,6 @@ function Testes() {
         </form>
       </div>
 
-      {/* Modal de Histórico de Testes */}
       <Modal
         title={`Histórico de Testes - Aeronave ${selectedAeronaveId}`}
         isOpen={isHistoricoModalOpen}
