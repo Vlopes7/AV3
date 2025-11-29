@@ -13,7 +13,7 @@
     "seed": "tsx src/seed.ts",
     "load:test": "tsx src/scripts/loadTest.ts",
     "charts:generate": "tsx src/scripts/generateCharts.ts",
-    "server": "npx ts-node-dev --respawn server.mts"
+    "server": "tsx watch server.mts"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
